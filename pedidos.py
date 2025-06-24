@@ -13,8 +13,9 @@ port = st.secrets["postgres"]["port"]
 database = st.secrets["postgres"]["database"]
 user = st.secrets["postgres"]["user"]
 password = st.secrets["postgres"]["password"]
+pool_mode = st.secrets["postgres"].get("pool_mode", "session")  # opcional, si usas pool_mode
 
-# Estado inicial
+# Estado inicial en session_state
 if "carrito" not in st.session_state:
     st.session_state.carrito = []
 
@@ -23,7 +24,6 @@ if "confirmacion_pendiente" not in st.session_state:
 
 if "pedido_guardado" not in st.session_state:
     st.session_state.pedido_guardado = False
-
 
 # -------------------- CONEXIÓN --------------------
 def conectar_db():
@@ -57,6 +57,7 @@ producto_opciones = [f"{nombre} ({unidad})" for _, nombre, unidad in productos]
 producto_seleccionado = st.selectbox("Producto", producto_opciones)
 
 cantidad = st.number_input("Cantidad", min_value=0.0, step=1.0)
+
 unidades = [
     "Kg", "Medio", "Cuarto", "Pieza",
     "bulto 5kg", "bulto 10kg", "bulto 20kg", "Tubitos 1kg"
@@ -104,18 +105,21 @@ if st.session_state.carrito:
         st.success("Producto(s) eliminado(s)")
 
     # -------------------- RESUMEN --------------------
-    st.subheader("Resumen del pedido")
     df = pd.DataFrame(st.session_state.carrito)
-    resumen_pivot = df.pivot_table(
-        index="producto", columns="unidad", values="cantidad", aggfunc="sum", fill_value=0
-    ).reset_index()
-    st.table(resumen_pivot)
+    if not df.empty and all(col in df.columns for col in ["producto", "unidad", "cantidad"]):
+        resumen_pivot = df.pivot_table(
+            index="producto", columns="unidad", values="cantidad", aggfunc="sum", fill_value=0
+        ).reset_index()
+        st.subheader("Resumen del pedido")
+        st.table(resumen_pivot)
+    else:
+        st.info("No hay productos para mostrar en el resumen")
 
     # -------------------- FLUJO DE GUARDADO --------------------
     if not st.session_state.confirmacion_pendiente and not st.session_state.pedido_guardado:
         if st.button("Guardar pedido"):
             st.session_state.confirmacion_pendiente = True
-            st.rerun()
+            st.experimental_rerun()
 
     if st.session_state.confirmacion_pendiente and not st.session_state.pedido_guardado:
         st.warning("¿Estás seguro de guardar este pedido?")
@@ -138,9 +142,11 @@ if st.session_state.carrito:
                 st.session_state.carrito = []
                 st.session_state.pedido_guardado = True
                 st.session_state.confirmacion_pendiente = False
+                st.experimental_rerun()
 
             except Exception as e:
                 st.error(f"❌ Error al guardar el pedido: {e}")
+
 else:
     st.info("Agrega productos al carrito para iniciar un pedido.")
 
