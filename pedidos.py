@@ -75,11 +75,13 @@ unidades_generales = [
     "Bulto 5kg", "Bulto 10kg", "Bulto 20kg", "Tubitos 1kg"
 ]
 
-# Lógica para asignar unidades y sabores según producto
-if "palomita" in producto_nombre.lower():
+# Lógica para asignar unidades y sabores según la primera palabra del producto
+producto_raiz = producto_nombre.lower().split()[0]
+
+if producto_raiz == "palomitas":
     unidades = unidades_palomitas
     sabores = sabores_palomitas
-elif "chip" in producto_nombre.lower():
+elif producto_raiz == "chips":
     unidades = unidades_chips
     sabores = sabores_chips
 else:
@@ -120,13 +122,13 @@ if st.session_state.carrito:
         nueva_cantidad = cols[1].number_input(
             f"Cantidad {i}", value=item["cantidad"], step=1.0, key=f"cant_{i}"
         )
-        nombre_producto = item["producto"].split(" (")[0].lower().strip()
-        # Unidades para item, según si es palomita, chips o general
-        if nombre_producto=="palomitas":
+
+        nombre_raiz = item["producto"].lower().split()[0]
+
+        if nombre_raiz == "palomitas":
             unidades_item = unidades_palomitas
             sabores_item = sabores_palomitas
-            
-        elif nombre_producto=="chips":
+        elif nombre_raiz == "chips":
             unidades_item = unidades_chips
             sabores_item = sabores_chips
         else:
@@ -174,7 +176,7 @@ if st.session_state.carrito:
     if not st.session_state.confirmacion_pendiente and not st.session_state.pedido_guardado:
         if st.button("Guardar pedido"):
             st.session_state.confirmacion_pendiente = True
-            st.rerun()
+            st.experimental_rerun()
 
     if st.session_state.confirmacion_pendiente and not st.session_state.pedido_guardado:
         st.warning("¿Estás seguro de guardar este pedido?")
@@ -197,7 +199,7 @@ if st.session_state.carrito:
                 st.session_state.carrito = []
                 st.session_state.pedido_guardado = True
                 st.session_state.confirmacion_pendiente = False
-                st.rerun()
+                st.experimental_rerun()
 
             except Exception as e:
                 st.error(f"❌ Error al guardar el pedido: {e}")
