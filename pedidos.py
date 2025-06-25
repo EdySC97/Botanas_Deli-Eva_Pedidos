@@ -13,7 +13,7 @@ port = st.secrets["postgres"]["port"]
 database = st.secrets["postgres"]["database"]
 user = st.secrets["postgres"]["user"]
 password = st.secrets["postgres"]["password"]
-pool_mode = st.secrets["postgres"].get("pool_mode", "session")  # opcional, si usas pool_mode
+pool_mode = st.secrets["postgres"].get("pool_mode", "session")  # opcional
 
 # Estado inicial en session_state
 if "carrito" not in st.session_state:
@@ -25,7 +25,7 @@ if "confirmacion_pendiente" not in st.session_state:
 if "pedido_guardado" not in st.session_state:
     st.session_state.pedido_guardado = False
 
-# -------------------- CONEXIÓN --------------------
+# Conexión a la base de datos
 def conectar_db():
     try:
         conn = psycopg2.connect(
@@ -45,66 +45,119 @@ if conn is None:
     st.stop()
 cur = conn.cursor()
 
-# -------------------- CLIENTES Y PRODUCTOS --------------------
+# Obtener clientes
 cur.execute("SELECT id, nombre FROM clientes ORDER BY nombre")
 clientes = cur.fetchall()
 cliente_dict = {nombre: id_ for id_, nombre in clientes}
 cliente_nombre = st.selectbox("Selecciona cliente", list(cliente_dict.keys()))
 
+# Obtener productos
 cur.execute("SELECT id, nombre, unidad_base FROM productos ORDER BY nombre")
 productos = cur.fetchall()
 producto_opciones = [f"{nombre} ({unidad})" for _, nombre, unidad in productos]
 producto_seleccionado = st.selectbox("Producto", producto_opciones)
 
+# Mapear producto seleccionado a su id y nombre real
+producto_idx = producto_opciones.index(producto_seleccionado)
+producto_id = productos[producto_idx][0]
+producto_nombre = productos[producto_idx][1]
+
+# Definir unidades y sabores para Palomitas y Chips
+unidades_palomitas = ["50 gr", "70 gr", "Medio kilo", "Kilo"]
+sabores_palomitas = ["Escolar", "Queso", "Flaming Hot", "Queso Jalapeño", "Mantequilla"]
+
+unidades_chips = ["100 g", "200 g", "Medio kilo", "Bulto 5kg", "Bulto 10kg"]
+sabores_chips = ["Adobada", "Queso Jalapeño", "Salsa Negra", "Naturales (Camote)"]
+
+# Unidades generales para otros productos
+unidades_generales = [
+    "Kg", "Medio", "Cuarto", "Pieza",
+    "Bulto 5kg", "Bulto 10kg", "Bulto 20kg", "Tubitos 1kg"
+]
+
+# Lógica para asignar unidades y sabores según producto
+if "palomita" in producto_nombre.lower():
+    unidades = unidades_palomitas
+    sabores = sabores_palomitas
+elif "chip" in producto_nombre.lower():
+    unidades = unidades_chips
+    sabores = sabores_chips
+else:
+    unidades = unidades_generales
+    sabores = ["N/A"]  # Para productos sin sabores
+
 cantidad = st.number_input("Cantidad", min_value=0.0, step=1.0)
 
-unidades = [
-    "Kg", "Medio", "Cuarto", "Pieza",
-    "bulto 5kg", "bulto 10kg", "bulto 20kg", "Tubitos 1kg"
-]
 unidad = st.selectbox("Unidades", unidades)
 
-# -------------------- AGREGAR AL PEDIDO --------------------
+# Mostrar selector de sabores solo si tiene sabores definidos (no "N/A")
+if sabores != ["N/A"]:
+    sabor = st.selectbox("Sabor", sabores)
+else:
+    sabor = None
+
+# Botón para agregar al pedido
 if st.button("Agregar al pedido"):
     if cantidad <= 0:
         st.warning("La cantidad debe ser mayor que cero")
     else:
-        idx = producto_opciones.index(producto_seleccionado)
-        producto_id = productos[idx][0]
-        producto_nombre = productos[idx][1]
         st.session_state.carrito.append({
             "producto_id": producto_id,
             "producto": producto_nombre,
             "cantidad": cantidad,
             "unidad": unidad,
+            "sabor": sabor if sabor else ""
         })
         st.success(f"Producto '{producto_nombre}' agregado.")
 
-# -------------------- EDITAR CARRITO --------------------
+# Editar carrito
 if st.session_state.carrito:
     st.subheader("Editar productos en el carrito")
     eliminar_indices = []
     for i, item in enumerate(st.session_state.carrito):
-        cols = st.columns([4, 2, 2, 2])
+        cols = st.columns([4, 2, 2, 3, 2])
         cols[0].write(item["producto"])
         nueva_cantidad = cols[1].number_input(
             f"Cantidad {i}", value=item["cantidad"], step=1.0, key=f"cant_{i}"
         )
+        # Unidades para item, según si es palomita, chips o general
+        if "palomita" in item["producto"].lower():
+            unidades_item = unidades_palomitas
+            sabores_item = sabores_palomitas
+        elif "chip" in item["producto"].lower():
+            unidades_item = unidades_chips
+            sabores_item = sabores_chips
+        else:
+            unidades_item = unidades_generales
+            sabores_item = ["N/A"]
+
+        unidad_idx = unidades_item.index(item["unidad"]) if item["unidad"] in unidades_item else 0
         nueva_unidad = cols[2].selectbox(
-            f"Unidad {i}", unidades, index=unidades.index(item["unidad"]), key=f"uni_{i}"
+            f"Unidad {i}", unidades_item, index=unidad_idx, key=f"uni_{i}"
         )
-        if cols[3].button("Eliminar", key=f"del_{i}"):
+
+        if sabores_item != ["N/A"]:
+            sabor_idx = sabores_item.index(item["sabor"]) if item["sabor"] in sabores_item else 0
+            nuevo_sabor = cols[3].selectbox(
+                f"Sabor {i}", sabores_item, index=sabor_idx, key=f"sabor_{i}"
+            )
+        else:
+            nuevo_sabor = ""
+
+        if cols[4].button("Eliminar", key=f"del_{i}"):
             eliminar_indices.append(i)
 
         st.session_state.carrito[i]["cantidad"] = nueva_cantidad
         st.session_state.carrito[i]["unidad"] = nueva_unidad
+        st.session_state.carrito[i]["sabor"] = nuevo_sabor
 
-    for idx in sorted(eliminar_indices, reverse=True):
-        st.session_state.carrito.pop(idx)
+    # Eliminar items seleccionados
+    for idx_del in sorted(eliminar_indices, reverse=True):
+        st.session_state.carrito.pop(idx_del)
     if eliminar_indices:
         st.success("Producto(s) eliminado(s)")
 
-    # -------------------- RESUMEN --------------------
+    # Mostrar resumen del pedido
     df = pd.DataFrame(st.session_state.carrito)
     if not df.empty and all(col in df.columns for col in ["producto", "unidad", "cantidad"]):
         resumen_pivot = df.pivot_table(
@@ -115,11 +168,11 @@ if st.session_state.carrito:
     else:
         st.info("No hay productos para mostrar en el resumen")
 
-    # -------------------- FLUJO DE GUARDADO --------------------
+    # Guardar pedido
     if not st.session_state.confirmacion_pendiente and not st.session_state.pedido_guardado:
         if st.button("Guardar pedido"):
             st.session_state.confirmacion_pendiente = True
-            st.experimental_rerun()
+            st.rerun()
 
     if st.session_state.confirmacion_pendiente and not st.session_state.pedido_guardado:
         st.warning("¿Estás seguro de guardar este pedido?")
@@ -133,8 +186,8 @@ if st.session_state.carrito:
 
                 for item in st.session_state.carrito:
                     cur.execute(
-                        "INSERT INTO detalle_pedido (pedido_id, producto_id, cantidad, unidad) VALUES (%s, %s, %s, %s)",
-                        (pedido_id, item["producto_id"], item["cantidad"], item["unidad"])
+                        "INSERT INTO detalle_pedido (pedido_id, producto_id, cantidad, unidad, sabor) VALUES (%s, %s, %s, %s, %s)",
+                        (pedido_id, item["producto_id"], item["cantidad"], item["unidad"], item["sabor"])
                     )
                 conn.commit()
 
@@ -142,7 +195,7 @@ if st.session_state.carrito:
                 st.session_state.carrito = []
                 st.session_state.pedido_guardado = True
                 st.session_state.confirmacion_pendiente = False
-                st.experimental_rerun()
+                st.rerun()
 
             except Exception as e:
                 st.error(f"❌ Error al guardar el pedido: {e}")
