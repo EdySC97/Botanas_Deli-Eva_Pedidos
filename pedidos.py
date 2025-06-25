@@ -176,7 +176,7 @@ if st.session_state.carrito:
     if not st.session_state.confirmacion_pendiente and not st.session_state.pedido_guardado:
         if st.button("Guardar pedido"):
             st.session_state.confirmacion_pendiente = True
-            st.experimental_rerun()
+            st.rerun()
 
     if st.session_state.confirmacion_pendiente and not st.session_state.pedido_guardado:
         st.warning("¿Estás seguro de guardar este pedido?")
@@ -199,7 +199,7 @@ if st.session_state.carrito:
                 st.session_state.carrito = []
                 st.session_state.pedido_guardado = True
                 st.session_state.confirmacion_pendiente = False
-                st.experimental_rerun()
+                st.rerun()
 
             except Exception as e:
                 st.error(f"❌ Error al guardar el pedido: {e}")
