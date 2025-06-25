@@ -120,11 +120,13 @@ if st.session_state.carrito:
         nueva_cantidad = cols[1].number_input(
             f"Cantidad {i}", value=item["cantidad"], step=1.0, key=f"cant_{i}"
         )
+        nombre_producto = item["producto"].split(" (")[0].lower().strip()
         # Unidades para item, según si es palomita, chips o general
-        if "palomita" in item["producto"].lower():
+        if nombre_producto=="palomitas":
             unidades_item = unidades_palomitas
             sabores_item = sabores_palomitas
-        elif "chip" in item["producto"].lower():
+            
+        elif nombre_producto=="chips":
             unidades_item = unidades_chips
             sabores_item = sabores_chips
         else:
