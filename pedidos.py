@@ -78,7 +78,7 @@ unidades_generales = [
 # Lógica para asignar unidades y sabores según la primera palabra del producto
 producto_raiz = producto_nombre.lower().split()[0]
 
-if producto_raiz == "palomitas":
+if producto_raiz == "palomita":
     unidades = unidades_palomitas
     sabores = sabores_palomitas
 elif producto_raiz == "chips":
@@ -125,7 +125,7 @@ if st.session_state.carrito:
 
         nombre_raiz = item["producto"].lower().split()[0]
 
-        if nombre_raiz == "palomitas":
+        if nombre_raiz == "palomita":
             unidades_item = unidades_palomitas
             sabores_item = sabores_palomitas
         elif nombre_raiz == "chips":
