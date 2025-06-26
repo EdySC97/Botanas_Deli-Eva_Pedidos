@@ -46,7 +46,7 @@ if conn is None:
 cur = conn.cursor()
 
 # Obtener clientes
-cur.execute("SELECT id, nombre FROM clientes ORDER BY nombre")
+cur.execute("SELECT id, alias FROM clientes ORDER BY nombre")
 clientes = cur.fetchall()
 cliente_dict = {nombre: id_ for id_, nombre in clientes}
 cliente_nombre = st.selectbox("Selecciona cliente", list(cliente_dict.keys()))
