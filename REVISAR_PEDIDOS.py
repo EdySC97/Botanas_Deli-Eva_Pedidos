@@ -33,15 +33,22 @@ ORDER BY p.fecha, p.id;
 """, (fecha,))
 pedidos = cur.fetchall()
 
+estados = ["en proceso", "listo", "cancelado"]
+
 # Mostrar y editar estados
 for pedido in pedidos:
     pedido_id, nombre_cliente, alias_cliente, fecha_local, estado_actual = pedido
     st.write(f"Pedido ID: {pedido_id} | Cliente: {nombre_cliente} ({alias_cliente}) | Fecha: {fecha_local}")
 
+    try:
+        idx = estados.index(estado_actual)
+    except ValueError:
+        idx = 0
+
     nuevo_estado = st.selectbox(
         "Estado",
-        options=["en proceso", "listo", "cancelado"],
-        index=["en proceso", "listo", "cancelado"].index(estado_actual),
+        options=estados,
+        index=idx,
         key=f"estado_{pedido_id}"
     )
 
