@@ -1,3 +1,4 @@
-streamlit
-psycopg2
-pandas
+ streamlit  
+ psycopg2-binary
+ pandas  
+ os
