@@ -156,21 +156,21 @@ for pedido in pedidos:
         if st.button(f"📄 Generar PDF pedido {pedido_id}", key=f"pdf_{pedido_id}"):
             pdf = FPDF()
             pdf.add_page()
-            pdf.set_font("Arial", size=12)
+            pdf.set_font("Arial", size=10)
             pdf.cell(0, 10, f"Pedido ID: {pedido_id}", ln=True)
             pdf.cell(0, 10, f"Cliente: {nombre_cliente} ({alias_cliente})", ln=True)
             pdf.cell(0, 10, f"Fecha: {fecha_local}", ln=True)
             pdf.cell(0, 10, f"Estado: {nuevo_estado}", ln=True)
             pdf.ln(5)
 
-            pdf.set_font("Arial", "B", 12)
+            pdf.set_font("Arial", "B", 8)
             pdf.cell(60, 10, "Producto", border=1)
             pdf.cell(30, 10, "Cantidad", border=1)
             pdf.cell(30, 10, "Unidad", border=1)
             pdf.cell(60, 10, "Sabor", border=1)
             pdf.ln()
 
-            pdf.set_font("Arial", size=12)
+            pdf.set_font("Arial", size=8)
             for nombre_prod, cantidad, unidad, sabor in detalles_pedido:
                 pdf.cell(60, 10, str(nombre_prod), border=1)
                 pdf.cell(30, 10, str(cantidad), border=1)
