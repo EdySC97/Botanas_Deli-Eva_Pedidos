@@ -163,14 +163,14 @@ for pedido in pedidos:
             pdf.cell(0, 10, f"Estado: {nuevo_estado}", ln=True)
             pdf.ln(5)
 
-            pdf.set_font("Arial", "B", 8)
+            pdf.set_font("Arial", "B", 6)
             pdf.cell(60, 10, "Producto", border=1)
             pdf.cell(30, 10, "Cantidad", border=1)
             pdf.cell(30, 10, "Unidad", border=1)
             pdf.cell(60, 10, "Sabor", border=1)
             pdf.ln()
 
-            pdf.set_font("Arial", size=8)
+            pdf.set_font("Arial", size=6)
             for nombre_prod, cantidad, unidad, sabor in detalles_pedido:
                 pdf.cell(60, 10, str(nombre_prod), border=1)
                 pdf.cell(30, 10, str(cantidad), border=1)
