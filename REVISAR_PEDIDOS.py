@@ -143,7 +143,7 @@ for pedido in pedidos:
         cur.execute("""
         SELECT pr.nombre, dp.cantidad, dp.unidad, dp.sabor
         FROM detalle_pedido dp
-        JOIN productos pr ON pr.id = dp.producto_id
+        JOIN productos pr ON pr.id = dp.producto_idF
         WHERE dp.pedido_id = %s;
         """, (pedido_id,))
         detalles_pedido = cur.fetchall()
@@ -171,6 +171,7 @@ for pedido in pedidos:
             pdf.set_font("Arial", size=9)
         
             for nombre_prod, cantidad, unidad, sabor in detalles_pedido:
+                sabor = sabor if sabor else "N/A"
                 pdf.set_font("Arial", "B", 8)
                 pdf.cell(0, 6, f"{nombre_prod}", ln=True)
                 pdf.set_font("Arial", "", 8)
