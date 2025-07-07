@@ -158,7 +158,7 @@ for pedido in pedidos:
             pdf = FPDF(orientation='P', unit='mm', format=(80, 200))
             pdf.add_page()
             pdf.set_margins(5, 5, 5)
-            pdf.set_font("Arial", size=10)
+            pdf.set_font("Arial", size=5)
             pdf.cell(0, 6, f"Pedido ID: {pedido_id}", ln=True)
             pdf.cell(0, 6, f"Cliente: {nombre_cliente}", ln=True)
             pdf.cell(0,6,f"Alias: {alias_cliente}", ln=True)
