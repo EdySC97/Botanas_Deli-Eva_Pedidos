@@ -167,7 +167,7 @@ for pedido in pedidos:
         
             pdf.set_font("Arial", "B", 6)
             pdf.cell(0, 6, "Detalles del pedido:", ln=True)
-            pdf.set_font("Arial", size=9)
+            pdf.set_font("Arial", size=6)
         
             for nombre_prod, cantidad, unidad, sabor in detalles_pedido:
                 pdf.cell(0, 6, f"{nombre_prod}", ln=True)
