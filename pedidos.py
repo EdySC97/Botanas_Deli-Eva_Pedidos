@@ -79,7 +79,7 @@ sabores_ajo_salado = ["Natural"]
 # Definir carne seca
 
 unidades_carne_seca = ["100 g", "50 g", "Medio kilo", "Kilo"]
-sabores_carne_seca = ["Natura", "Chipotle", "pimienta limón", "Mango habanero"]
+sabores_carne_seca = ["Natural", "Chipotle", "Pimienta limón", "Mango habanero"]
 
 # Unidades generales para otros productos
 unidades_generales = [
