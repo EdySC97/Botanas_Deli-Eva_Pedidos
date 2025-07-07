@@ -171,7 +171,7 @@ for pedido in pedidos:
             pdf.set_font("Arial", size=9)
         
             for nombre_prod, cantidad, unidad, sabor in detalles_pedido:
-                sabor = sabor if sabor else "N/A"
+                #sabor = sabor if sabor else "N/A"
                 pdf.set_font("Arial", "B", 8)
                 pdf.cell(0, 6, f"{nombre_prod}", ln=True)
                 pdf.set_font("Arial", "", 8)
