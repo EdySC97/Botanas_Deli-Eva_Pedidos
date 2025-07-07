@@ -25,6 +25,7 @@ if "confirmacion_pendiente" not in st.session_state:
 if "pedido_guardado" not in st.session_state:
     st.session_state.pedido_guardado = False
 
+
 # Conexión a la base de datos
 def conectar_db():
     try:
@@ -39,6 +40,7 @@ def conectar_db():
     except Exception as e:
         st.error(f"Error al conectar con la base de datos: {e}")
         return None
+
 
 conn = conectar_db()
 if conn is None:
@@ -69,10 +71,25 @@ sabores_palomitas = ["Escolar", "Queso", "Flaming Hot", "Queso Jalapeño", "Mant
 unidades_chips = ["100 g", "200 g", "Medio kilo", "Bulto 5kg", "Bulto 10kg"]
 sabores_chips = ["Adobada", "Queso Jalapeño", "Salsa Negra", "Naturales (Camote)"]
 
+# Definir unidades para ajo salado
+
+unidades_ajo_salado = ["100 g", "50 g"]
+
+# Definir carne seca
+
+unidades_carne_seca = ["100 g", "50 g", "Medio kilo", "Kilo"]
+sabores_carne_seca = ["Natura", "Chipotle", "pimienta limón", "Mango habanero"]
+
 # Unidades generales para otros productos
 unidades_generales = [
-    "Kg", "Medio", "Cuarto", "Pieza",
-    "Bulto 5kg", "Bulto 10kg", "Bulto 20kg", "Tubitos 1kg"
+    "Kg",
+    "Medio",
+    "Cuarto",
+    "Pieza",
+    "Bulto 5kg",
+    "Bulto 10kg",
+    "Bulto 20kg",
+    "Tubitos 1kg",
 ]
 
 # Lógica para asignar unidades y sabores según la primera palabra del producto
@@ -84,6 +101,11 @@ if producto_raiz == "palomita":
 elif producto_raiz == "chips":
     unidades = unidades_chips
     sabores = sabores_chips
+elif producto_raiz == "ajo":
+    unidades = unidades_ajo_salado
+elif producto_raiz == "carne":
+    unidades = unidades_carne_seca
+    sabores = sabores_carne_seca
 else:
     unidades = unidades_generales
     sabores = ["N/A"]  # Para productos sin sabores
@@ -103,13 +125,15 @@ if st.button("Agregar al pedido"):
     if cantidad <= 0:
         st.warning("La cantidad debe ser mayor que cero")
     else:
-        st.session_state.carrito.append({
-            "producto_id": producto_id,
-            "producto": producto_nombre,
-            "cantidad": cantidad,
-            "unidad": unidad,
-            "sabor": sabor if sabor else ""
-        })
+        st.session_state.carrito.append(
+            {
+                "producto_id": producto_id,
+                "producto": producto_nombre,
+                "cantidad": cantidad,
+                "unidad": unidad,
+                "sabor": sabor if sabor else "",
+            }
+        )
         st.success(f"Producto '{producto_nombre}' agregado.")
 
 # Editar carrito
@@ -135,13 +159,21 @@ if st.session_state.carrito:
             unidades_item = unidades_generales
             sabores_item = ["N/A"]
 
-        unidad_idx = unidades_item.index(item["unidad"]) if item["unidad"] in unidades_item else 0
+        unidad_idx = (
+            unidades_item.index(item["unidad"])
+            if item["unidad"] in unidades_item
+            else 0
+        )
         nueva_unidad = cols[2].selectbox(
             f"Unidad {i}", unidades_item, index=unidad_idx, key=f"uni_{i}"
         )
 
         if sabores_item != ["N/A"]:
-            sabor_idx = sabores_item.index(item["sabor"]) if item["sabor"] in sabores_item else 0
+            sabor_idx = (
+                sabores_item.index(item["sabor"])
+                if item["sabor"] in sabores_item
+                else 0
+            )
             nuevo_sabor = cols[3].selectbox(
                 f"Sabor {i}", sabores_item, index=sabor_idx, key=f"sabor_{i}"
             )
@@ -163,9 +195,15 @@ if st.session_state.carrito:
 
     # Mostrar resumen del pedido
     df = pd.DataFrame(st.session_state.carrito)
-    if not df.empty and all(col in df.columns for col in ["producto", "unidad", "cantidad"]):
+    if not df.empty and all(
+        col in df.columns for col in ["producto", "unidad", "cantidad"]
+    ):
         resumen_pivot = df.pivot_table(
-            index="producto", columns="unidad", values="cantidad", aggfunc="sum", fill_value=0
+            index="producto",
+            columns="unidad",
+            values="cantidad",
+            aggfunc="sum",
+            fill_value=0,
         ).reset_index()
         st.subheader("Resumen del pedido")
         st.table(resumen_pivot)
@@ -173,7 +211,10 @@ if st.session_state.carrito:
         st.info("No hay productos para mostrar en el resumen")
 
     # Guardar pedido
-    if not st.session_state.confirmacion_pendiente and not st.session_state.pedido_guardado:
+    if (
+        not st.session_state.confirmacion_pendiente
+        and not st.session_state.pedido_guardado
+    ):
         if st.button("Guardar pedido"):
             st.session_state.confirmacion_pendiente = True
             st.rerun()
@@ -184,14 +225,20 @@ if st.session_state.carrito:
             try:
                 cur.execute(
                     "INSERT INTO pedidos (cliente_id) VALUES (%s) RETURNING id",
-                    (cliente_dict[cliente_nombre],)
+                    (cliente_dict[cliente_nombre],),
                 )
                 pedido_id = cur.fetchone()[0]
 
                 for item in st.session_state.carrito:
                     cur.execute(
                         "INSERT INTO detalle_pedido (pedido_id, producto_id, cantidad, unidad, sabor) VALUES (%s, %s, %s, %s, %s)",
-                        (pedido_id, item["producto_id"], item["cantidad"], item["unidad"], item["sabor"])
+                        (
+                            pedido_id,
+                            item["producto_id"],
+                            item["cantidad"],
+                            item["unidad"],
+                            item["sabor"],
+                        ),
                     )
                 conn.commit()
 
