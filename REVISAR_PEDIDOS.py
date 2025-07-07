@@ -143,7 +143,7 @@ for pedido in pedidos:
         cur.execute("""
         SELECT pr.nombre, dp.cantidad, dp.unidad, dp.sabor
         FROM detalle_pedido dp
-        JOIN productos pr ON pr.id = dp.producto_idF
+        JOIN productos pr ON pr.id = dp.producto_id
         WHERE dp.pedido_id = %s;
         """, (pedido_id,))
         detalles_pedido = cur.fetchall()
@@ -153,39 +153,40 @@ for pedido in pedidos:
         st.dataframe(df_detalle)
 
         # Generar PDF
-        # Generar PDF tipo ticket
-        if st.button(f"📄 Generar Ticket Pedido {pedido_id}", key=f"pdf_{pedido_id}"):
-            pdf = FPDF(orientation='P', unit='mm', format=(80, 200))
+        if st.button(f"📄 Generar PDF pedido {pedido_id}", key=f"pdf_{pedido_id}"):
+            pdf = FPDF()
             pdf.add_page()
-            pdf.set_margins(5, 5, 5)
-            pdf.set_font("Arial", size=8)
-            pdf.cell(0, 6, f"Pedido ID: {pedido_id}", ln=True)
-            pdf.cell(0, 6, f"Cliente: {nombre_cliente}", ln=True)
-            pdf.cell(0,6,f"Alias: {alias_cliente}", ln=True)
-            pdf.cell(0, 6, f"Fecha: {fecha_local}", ln=True)
-            pdf.cell(0, 6, f"Estado: {nuevo_estado}", ln=True)
-            pdf.ln(4)
-            
-            pdf.set_font("Arial", "B", 8)
-            pdf.cell(0, 6, "Detalles del pedido:", ln=True)
-            pdf.set_font("Arial", size=9)
-        
+            pdf.set_font("Arial", size=10)
+            pdf.cell(0, 10, f"Pedido ID: {pedido_id}", ln=True)
+            pdf.cell(0, 10, f"Cliente: {nombre_cliente} ({alias_cliente})", ln=True)
+            pdf.cell(0, 10, f"Fecha: {fecha_local}", ln=True)
+            pdf.cell(0, 10, f"Estado: {nuevo_estado}", ln=True)
+            pdf.ln(5)
+
+            pdf.set_font("Arial", "B", 6)
+            pdf.cell(60, 10, "Producto", border=1)
+            pdf.cell(30, 10, "Cantidad", border=1)
+            pdf.cell(30, 10, "Unidad", border=1)
+            pdf.cell(60, 10, "Sabor", border=1)
+            pdf.ln()
+
+            pdf.set_font("Arial", size=6)
             for nombre_prod, cantidad, unidad, sabor in detalles_pedido:
-                sabor = sabor if sabor else "N/A"
-                pdf.set_font("Arial", "B", 8)
-                pdf.cell(0, 6, f"{nombre_prod}", ln=True)
-                pdf.set_font("Arial", "", 8)
-                pdf.cell(0, 6, f"{cantidad} {unidad} | Sabor: {sabor}", ln=True)
-                pdf.ln(1)
-        
+                pdf.cell(60, 10, str(nombre_prod), border=1)
+                pdf.cell(30, 10, str(cantidad), border=1)
+                pdf.cell(30, 10, str(unidad), border=1)
+                pdf.cell(60, 10, str(sabor), border=1)
+                pdf.ln()
+
             pdf_output = pdf.output(dest='S').encode('latin1')
             st.download_button(
-                label=f"⬇️ Descargar Ticket PDF Pedido {pedido_id}",
+                label=f"⬇️ Descargar PDF Pedido {pedido_id}",
                 data=pdf_output,
-                file_name=f"ticket_pedido_{pedido_id}.pdf",
+                file_name=f"pedido_{pedido_id}.pdf",
                 mime="application/pdf",
-                key=f"ticket_pdf_{pedido_id}"
+                key=f"download_pdf_{pedido_id}"
             )
+
 st.write("---")
 cur.close()
 conn.close()
