@@ -25,8 +25,8 @@ def convertir_a_kg(cantidad, unidad):
         return cantidad * 0.05
     elif unidad in ['100 gr', '100g', '100 gramos']:
         return cantidad * 0.10
-    elif unidad in ['70 gr', '70g', '70 gramos']:
-        return cantidad * 0.07
+    elif unidad in ['100 gr', '100g', '100 gramos']:
+        return cantidad * 0.010
     else:
         return 0
 
@@ -154,30 +154,30 @@ for pedido in pedidos:
 
         # Generar PDF tipo ticket
         if st.button(f"📄 Generar Ticket Pedido {pedido_id}", key=f"pdf_{pedido_id}"):
-            pdf = FPDF(orientation='P', unit='mm', format=(80, 2117))
+            pdf = FPDF(orientation='P', unit='mm', format=(80, 297))
             pdf.add_page()
-            pdf.set_margins(5, 2, 5)
-            pdf.set_font("Arial", size=7)
+            pdf.set_margins(5, 1, 3)
+            pdf.set_font("Arial", size=10)
             pdf.cell(0, 6, f"Pedido ID: {pedido_id}", ln=True)
-            pdf.set_font("Arial", "B", 7)
+            pdf.set_font("Arial", "B", 10)
             pdf.cell(0, 6, f"Cliente: {nombre_cliente}", ln=True)
-            pdf.set_font("Arial", "B", 7)
+            pdf.set_font("Arial", "B", 10)
             pdf.cell(0,6, f"Alias: {alias_cliente}", ln=True)
-            pdf.set_font("Arial", "B", 7)
+            pdf.set_font("Arial", "B", 10)
             pdf.cell(0, 6, f"Fecha: {fecha_local}", ln=True)
-            pdf.set_font("Arial", "B", 7)
+            pdf.set_font("Arial", "B", 10)
             pdf.cell(0, 6, f"Estado: {nuevo_estado}", ln=True)
-            pdf.set_font("Arial", "", 7)
+            pdf.set_font("Arial", "", 10)
             pdf.ln(4)
         
-            pdf.set_font("Arial", "B", 7)
+            pdf.set_font("Arial", "B", 10)
             pdf.cell(0, 6, "Detalles del pedido:", ln=True)
-            pdf.set_font("Arial", size=7)
+            pdf.set_font("Arial", size=10)
         
             for nombre_prod, cantidad, unidad, sabor in detalles_pedido:
-                pdf.set_font("Arial", "B", 7)
+                pdf.set_font("Arial", "B", 10)
                 pdf.cell(0, 6, f"{nombre_prod}", ln=True)
-                pdf.set_font("Arial", "", 7)
+                pdf.set_font("Arial", "", 10)
                 pdf.cell(0, 6, f"{cantidad} {unidad} | Sabor: {sabor}", ln=True)
                 pdf.ln(1)
         
