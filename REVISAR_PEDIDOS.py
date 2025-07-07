@@ -117,7 +117,7 @@ for pedido in pedidos:
         st.write(f"Alias: **{alias_cliente}**")
         st.write(f"Total Kilos: **{total_kg:.2f} kg**")
 
-        estados = ["en proceso", "listo", "cancelado"]
+        estados = ["en proceso", "listo", "cancelado", "devuelto"]
         try:
             index_estado = estados.index(estado_actual)
         except ValueError:
