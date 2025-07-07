@@ -154,7 +154,7 @@ for pedido in pedidos:
 
         # Generar PDF tipo ticket
         if st.button(f"📄 Generar Ticket Pedido {pedido_id}", key=f"pdf_{pedido_id}"):
-            pdf = FPDF(orientation='P', unit='mm', format=(80, 297))
+            pdf = FPDF(orientation='P', unit='mm', format=(80, 2117))
             pdf.add_page()
             pdf.set_margins(5, 2, 5)
             pdf.set_font("Arial", size=7)
