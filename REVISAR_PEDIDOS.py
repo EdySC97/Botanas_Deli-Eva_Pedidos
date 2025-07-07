@@ -160,17 +160,20 @@ for pedido in pedidos:
             pdf.set_margins(5, 5, 5)
             pdf.set_font("Arial", size=10)
             pdf.cell(0, 6, f"Pedido ID: {pedido_id}", ln=True)
-            pdf.cell(0, 6, f"Cliente: {nombre_cliente} ({alias_cliente})", ln=True)
+            pdf.cell(0, 6, f"Cliente: {nombre_cliente}", ln=True)
+            pdf.cell(0,6,f"Alias: {alias_cliente}", ln=True)
             pdf.cell(0, 6, f"Fecha: {fecha_local}", ln=True)
             pdf.cell(0, 6, f"Estado: {nuevo_estado}", ln=True)
             pdf.ln(4)
-        
+            
             pdf.set_font("Arial", "B", 10)
             pdf.cell(0, 6, "Detalles del pedido:", ln=True)
             pdf.set_font("Arial", size=9)
         
             for nombre_prod, cantidad, unidad, sabor in detalles_pedido:
+                pdf.set_font("Arial", "B", 10)
                 pdf.cell(0, 6, f"{nombre_prod}", ln=True)
+                pdf.set_font("Arial", "", 10)
                 pdf.cell(0, 6, f"{cantidad} {unidad} | Sabor: {sabor}", ln=True)
                 pdf.ln(1)
         
