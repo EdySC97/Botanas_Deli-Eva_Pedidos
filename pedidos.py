@@ -74,6 +74,7 @@ sabores_chips = ["Adobada", "Queso Jalapeño", "Salsa Negra", "Naturales (Camote
 # Definir unidades para ajo salado
 
 unidades_ajo_salado = ["100 g", "50 g"]
+sabores_ajo_salado = ["Natural"]
 
 # Definir carne seca
 
@@ -103,6 +104,7 @@ elif producto_raiz == "chips":
     sabores = sabores_chips
 elif producto_raiz == "ajo":
     unidades = unidades_ajo_salado
+    sabores = sabores_ajo_salado
 elif producto_raiz == "carne":
     unidades = unidades_carne_seca
     sabores = sabores_carne_seca
