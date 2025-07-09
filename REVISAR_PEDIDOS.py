@@ -42,6 +42,8 @@ cur = conn.cursor()
 
 st.title("📦 Revisión y Modificación de Pedidos")
 
+
+
 # Selector rango fechas
 fecha_inicio, fecha_fin = st.date_input(
     "Selecciona rango de fechas",
@@ -51,6 +53,14 @@ fecha_inicio, fecha_fin = st.date_input(
 if fecha_inicio > fecha_fin:
     st.error("La fecha inicio debe ser menor o igual a la fecha fin.")
     st.stop()
+
+# Obtener estados únicos
+cur.execute("SELECT DISTINCT estado FROM pedidos")
+estados_disponibles = [row[0] for row in cur.fetchall()]
+estado_filtro = st.selectbox("Filtrar por estado", options=["Todos"] + estados_disponibles)
+
+
+
 
 # --- Consulta lista de clientes ---
 cur.execute("SELECT DISTINCT nombre FROM clientes ORDER BY nombre;")
