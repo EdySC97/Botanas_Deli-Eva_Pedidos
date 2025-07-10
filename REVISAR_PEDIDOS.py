@@ -7,16 +7,8 @@ import io
 
 # --- Función para convertir unidades a kg ---
 def convertir_a_kg(cantidad, unidad):
-    if cantidad is None:
+    if not unidad:
         return 0
-    try:
-        cantidad = float(cantidad)
-    except:
-        return 0
-
-    if unidad is None:
-        return 0
-
     unidad = unidad.lower().strip()
     if unidad in ['kilo', 'kilos', 'kg']:
         return cantidad * 1
@@ -43,27 +35,27 @@ conn = psycopg2.connect(
 )
 cur = conn.cursor()
 
-st.set_page_config(layout="wide")
-st.title("📦 Revisión y Modificación de Pedidos")
+st.title("📦 Revisión de Pedidos")
 
-# --- Filtros ---
+# --- Selección de rango de fechas ---
 fecha_inicio, fecha_fin = st.date_input(
-    "📅 Selecciona rango de fechas",
+    "Selecciona rango de fechas",
     value=[date.today(), date.today()],
     key="rango_fechas"
 )
 if fecha_inicio > fecha_fin:
-    st.error("La fecha inicio debe ser menor o igual a la fecha fin.")
+    st.error("La fecha de inicio debe ser anterior o igual a la final.")
     st.stop()
 
-# Obtener lista de clientes
-cur.execute("SELECT DISTINCT c.nombre FROM pedidos p JOIN clientes c ON c.id = p.cliente_id")
-clientes_opciones = [r[0] for r in cur.fetchall()]
-cliente_filtro = st.selectbox("👤 Filtrar por cliente (opcional)", ["Todos"] + clientes_opciones)
+# --- Opcional: filtro por estado de pedido ---
+estado_filtro = st.selectbox("Filtrar por estado", ["Todos", "en proceso", "listo", "cancelado"])
 
-estado_filtro = st.selectbox("📦 Filtrar por estado", ["Todos", "en proceso", "listo", "cancelado"])
+# --- Obtener lista de clientes para filtrar ---
+cur.execute("SELECT DISTINCT nombre FROM clientes ORDER BY nombre")
+clientes = [r[0] for r in cur.fetchall()]
+cliente_filtro = st.selectbox("Filtrar por cliente", ["Todos"] + clientes)
 
-# --- Consulta pedidos ---
+# --- Consulta base de pedidos ---
 query = """
 SELECT
     p.id,
@@ -77,106 +69,107 @@ WHERE DATE(p.fecha AT TIME ZONE 'UTC' AT TIME ZONE 'America/Chihuahua') BETWEEN 
 """
 params = [fecha_inicio, fecha_fin]
 
-if cliente_filtro != "Todos":
-    query += " AND c.nombre = %s"
-    params.append(cliente_filtro)
-
 if estado_filtro != "Todos":
     query += " AND p.estado = %s"
     params.append(estado_filtro)
 
+if cliente_filtro != "Todos":
+    query += " AND c.nombre = %s"
+    params.append(cliente_filtro)
+
 query += " ORDER BY p.fecha, p.id"
-cur.execute(query, tuple(params))
+
+cur.execute(query, params)
 pedidos = cur.fetchall()
 
 if not pedidos:
-    st.info("No se encontraron pedidos.")
+    st.info("No se encontraron pedidos con esos filtros.")
     cur.close()
     conn.close()
     st.stop()
 
-# Obtener IDs de pedidos para detalles
+# --- Procesar pedidos ---
 pedido_ids = [p[0] for p in pedidos]
 
-# --- Consulta detalles ---
+# --- Traer todos los detalles de los pedidos en lote ---
 cur.execute("""
-SELECT pedido_id, cantidad, unidad
-FROM detalle_pedido
-WHERE pedido_id = ANY(%s);
+SELECT
+    dp.pedido_id,
+    pr.nombre,
+    dp.cantidad,
+    dp.unidad,
+    COALESCE(dp.sabor, '') AS sabor
+FROM detalle_pedido dp
+JOIN productos pr ON pr.id = dp.producto_id
+WHERE dp.pedido_id = ANY(%s);
 """, (pedido_ids,))
 detalles = cur.fetchall()
 
-# Sumar kilos por pedido
+# Agrupar detalles por pedido
 detalles_por_pedido = {}
-for pid, cantidad, unidad in detalles:
-    kg = convertir_a_kg(cantidad, unidad)
-    detalles_por_pedido[pid] = detalles_por_pedido.get(pid, 0) + kg
+total_kilos_por_pedido = {}
 
-# --- Mostrar pedidos ---
+for pid, producto, cantidad, unidad, sabor in detalles:
+    detalles_por_pedido.setdefault(pid, []).append((producto, cantidad, unidad, sabor))
+    total_kilos_por_pedido[pid] = total_kilos_por_pedido.get(pid, 0) + convertir_a_kg(cantidad, unidad)
+
+# --- Mostrar cada pedido ---
 for pedido in pedidos:
     pedido_id, nombre_cliente, alias_cliente, fecha_local, estado_actual = pedido
-    total_kg = detalles_por_pedido.get(pedido_id, 0)
+    total_kg = total_kilos_por_pedido.get(pedido_id, 0)
 
-    with st.expander(f"🧾 Pedido ID {pedido_id} - {nombre_cliente} ({alias_cliente})"):
-        st.write(f"🕒 Fecha: {fecha_local}")
-        st.write(f"⚖️ Total Kilos: **{total_kg:.2f} kg**")
+    with st.expander(f"📄 Pedido #{pedido_id} | Cliente: {nombre_cliente} | Estado: {estado_actual}"):
+        st.markdown(f"**Alias:** {alias_cliente}")
+        st.markdown(f"**Fecha:** {fecha_local}")
+        st.markdown(f"**Total estimado en kilos:** {total_kg:.2f} kg")
 
-        # Estado editable
+        # Mostrar contenido en tabla
+        df = pd.DataFrame(detalles_por_pedido.get(pedido_id, []),
+                          columns=["Producto", "Cantidad", "Unidad", "Sabor"])
+        st.table(df)
+
+        # Cambiar estado
         estados = ["en proceso", "listo", "cancelado"]
         index_estado = estados.index(estado_actual) if estado_actual in estados else 0
-        nuevo_estado = st.selectbox(
-            "📌 Estado",
-            options=estados,
-            index=index_estado,
-            key=f"estado_{pedido_id}"
-        )
+        nuevo_estado = st.selectbox("Cambiar estado", estados, index=index_estado, key=f"estado_{pedido_id}")
 
-        if st.button(f"💾 Guardar cambios (Pedido {pedido_id})", key=f"guardar_{pedido_id}"):
-            try:
-                cur.execute("UPDATE pedidos SET estado = %s WHERE id = %s", (nuevo_estado, pedido_id))
-                conn.commit()
-                st.success("✅ Estado actualizado.")
-            except Exception as e:
-                st.error(f"❌ Error al actualizar: {e}")
+        if st.button("Guardar estado", key=f"guardar_{pedido_id}"):
+            cur.execute("UPDATE pedidos SET estado = %s WHERE id = %s", (nuevo_estado, pedido_id))
+            conn.commit()
+            st.success(f"Pedido {pedido_id} actualizado a '{nuevo_estado}'.")
 
-        # Generar PDF ticket
-        if st.button(f"🖨️ Descargar ticket (Pedido {pedido_id})", key=f"pdf_{pedido_id}"):
-            cur.execute("""
-            SELECT pr.nombre, dp.cantidad, dp.unidad,
-                   COALESCE(dp.sabor, '') as sabor
-            FROM detalle_pedido dp
-            JOIN productos pr ON pr.id = dp.producto_id
-            WHERE dp.pedido_id = %s;
-            """, (pedido_id,))
-            detalles_pedido = cur.fetchall()
-
-            pdf = FPDF(format=(80, 297))  # Ticket width
+        # Botón para descargar como PDF
+        if st.button("Descargar PDF", key=f"pdf_{pedido_id}"):
+            pdf = FPDF(orientation="P", unit="mm", format=(58, 210))  # formato ticket 58mm
             pdf.add_page()
-            pdf.set_font("Arial", size=9)
-            pdf.multi_cell(0, 5, f"PEDIDO #{pedido_id}", align="C")
-            pdf.set_font("Arial", "B", size=9)
-            pdf.cell(0, 5, f"{nombre_cliente}", ln=True)
-            pdf.set_font("Arial", size=9)
+            pdf.set_font("Arial", "B", 10)
+            pdf.cell(0, 6, f"PEDIDO #{pedido_id}", ln=True)
+            pdf.set_font("Arial", "B", 9)
+            pdf.cell(0, 6, f"{nombre_cliente}", ln=True)
+            pdf.set_font("Arial", "", 8)
             pdf.cell(0, 5, f"Alias: {alias_cliente}", ln=True)
             pdf.cell(0, 5, f"Fecha: {fecha_local}", ln=True)
             pdf.cell(0, 5, f"Estado: {nuevo_estado}", ln=True)
-            pdf.cell(0, 5, "-"*32, ln=True)
+            pdf.ln(3)
+            pdf.set_font("Arial", "", 7)
 
-            for nombre_prod, cantidad, unidad, sabor in detalles_pedido:
-                pdf.multi_cell(0, 5, f"{cantidad:.2f} {unidad} | {nombre_prod}")
+            for prod, cant, uni, sabor in detalles_por_pedido[pedido_id]:
+                linea = f"{cant} {uni} - {prod}"
                 if sabor:
-                    pdf.multi_cell(0, 5, f"Sabor: {sabor}")
+                    linea += f" | Sabor: {sabor}"
+                pdf.multi_cell(0, 4, linea)
 
-            pdf.cell(0, 5, "-"*32, ln=True)
-            pdf.cell(0, 5, f"Total Kg: {total_kg:.2f}", ln=True)
+            pdf.ln(3)
+            pdf.set_font("Arial", "B", 8)
+            pdf.cell(0, 5, f"Total estimado: {total_kg:.2f} kg", ln=True)
 
-            pdf_output = pdf.output(dest='S').encode('latin1')
+            pdf_output = pdf.output(dest="S").encode("latin1")
             st.download_button(
-                label="⬇️ Descargar Ticket",
+                label="📥 Descargar PDF (Ticket)",
                 data=pdf_output,
                 file_name=f"pedido_{pedido_id}.pdf",
                 mime="application/pdf",
-                key=f"download_pdf_{pedido_id}"
+                key=f"dl_pdf_{pedido_id}"
             )
 
 st.write("---")
