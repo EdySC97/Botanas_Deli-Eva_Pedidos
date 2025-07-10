@@ -5,7 +5,7 @@ from datetime import date
 from fpdf import FPDF
 
 def convertir_a_kg(cantidad, unidad):
-    if not unidad:
+    if cantidad is None or unidad is None:
         return 0
     unidad = unidad.lower().strip()
     if unidad in ['kilo', 'kilos', 'kg']:
