@@ -6,23 +6,28 @@ from fpdf import FPDF
 
 # --- Función para convertir unidades a kg ---
 def convertir_a_kg(cantidad, unidad):
-    if cantidad is None or unidad is None:
+    try:
+        if cantidad is None or unidad is None:
+            return 0
+        cantidad = float(cantidad)
+        unidad = unidad.lower().strip()
+        if unidad in ['kilo', 'kilos', 'kg']:
+            return cantidad
+        elif unidad == 'medio':
+            return cantidad * 0.5
+        elif unidad == 'cuarto':
+            return cantidad * 0.25
+        elif unidad in ['50 gr', '50g', '50 gramos']:
+            return cantidad * 0.05
+        elif unidad in ['100 gr', '100g', '100 gramos']:
+            return cantidad * 0.10
+        elif unidad in ['70 gr', '70g', '70 gramos']:
+            return cantidad * 0.07
+        else:
+            return 0
+    except (TypeError, ValueError):
         return 0
-    unidad = unidad.lower().strip()
-    if unidad in ['kilo', 'kilos', 'kg']:
-        return cantidad
-    elif unidad == 'medio':
-        return cantidad * 0.5
-    elif unidad == 'cuarto':
-        return cantidad * 0.25
-    elif unidad in ['50 gr', '50g', '50 gramos']:
-        return cantidad * 0.05
-    elif unidad in ['100 gr', '100g', '100 gramos']:
-        return cantidad * 0.10
-    elif unidad in ['70 gr', '70g', '70 gramos']:
-        return cantidad * 0.07
-    else:
-        return 0
+
 
 # --- Conexión a la base de datos ---
 conn = psycopg2.connect(
