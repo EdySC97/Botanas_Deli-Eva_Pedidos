@@ -4,12 +4,13 @@ import pandas as pd
 from datetime import date
 from fpdf import FPDF
 
+# --- Función para convertir unidades a kg ---
 def convertir_a_kg(cantidad, unidad):
     if cantidad is None or unidad is None:
         return 0
     unidad = unidad.lower().strip()
     if unidad in ['kilo', 'kilos', 'kg']:
-        return cantidad * 1
+        return cantidad
     elif unidad == 'medio':
         return cantidad * 0.5
     elif unidad == 'cuarto':
@@ -35,7 +36,7 @@ cur = conn.cursor()
 
 st.title("📦 Revisión de Pedidos")
 
-# --- Filtros principales ---
+# --- Filtros ---
 fecha_inicio, fecha_fin = st.date_input("Selecciona rango de fechas", value=[date.today(), date.today()])
 if fecha_inicio > fecha_fin:
     st.error("La fecha de inicio debe ser anterior o igual a la final.")
@@ -47,7 +48,7 @@ cur.execute("SELECT DISTINCT nombre FROM clientes ORDER BY nombre")
 clientes = ["Todos"] + [r[0] for r in cur.fetchall()]
 cliente_filtro = st.selectbox("Filtrar por cliente", clientes)
 
-# --- Consulta de pedidos ---
+# --- Consulta pedidos ---
 query = """
 SELECT
     p.id,
@@ -103,7 +104,7 @@ for pid, producto, cantidad, unidad, sabor in detalles:
     detalles_por_pedido.setdefault(pid, []).append((producto, cantidad, unidad, sabor))
     kg_por_pedido[pid] = kg_por_pedido.get(pid, 0) + convertir_a_kg(cantidad, unidad)
 
-# --- Mostrar pedidos ---
+# --- Mostrar cada pedido ---
 for pedido in pedidos:
     pedido_id, nombre_cliente, alias_cliente, fecha_local, estado_actual = pedido
     total_kg = kg_por_pedido.get(pedido_id, 0)
@@ -113,10 +114,13 @@ for pedido in pedidos:
         st.markdown(f"**Fecha:** {fecha_local}")
         st.markdown(f"**Total estimado en kilos:** {total_kg:.2f} kg")
 
-        # Tabla de productos
-        df = pd.DataFrame(detalles_por_pedido.get(pedido_id, []),
-                          columns=["Producto", "Cantidad", "Unidad", "Sabor"])
-        st.table(df)
+        # Mostrar productos en tabla
+        detalles_pedido = detalles_por_pedido.get(pedido_id, [])
+        if detalles_pedido:
+            df = pd.DataFrame(detalles_pedido, columns=["Producto", "Cantidad", "Unidad", "Sabor"])
+            st.table(df)
+        else:
+            st.warning("Este pedido no tiene productos.")
 
         # Cambiar estado
         estados = ["en proceso", "listo", "cancelado"]
@@ -130,11 +134,11 @@ for pedido in pedidos:
 
         # PDF estilo ticket
         if st.button("📥 Descargar PDF", key=f"pdf_{pedido_id}"):
-            pdf = FPDF(orientation="P", unit="mm", format=(58, 210))
+            pdf = FPDF(orientation="P", unit="mm", format=(58, 200))
             pdf.add_page()
             pdf.set_font("Arial", "B", 9)
             pdf.cell(0, 6, f"PEDIDO #{pedido_id}", ln=True)
-            pdf.cell(0, 6, f"{nombre_cliente}", ln=True)
+            pdf.cell(0, 6, nombre_cliente.upper(), ln=True)
             pdf.set_font("Arial", "", 8)
             pdf.cell(0, 5, f"Alias: {alias_cliente}", ln=True)
             pdf.cell(0, 5, f"Fecha: {fecha_local}", ln=True)
@@ -142,7 +146,7 @@ for pedido in pedidos:
             pdf.ln(3)
 
             pdf.set_font("Arial", "", 7)
-            for prod, cant, uni, sabor in detalles_por_pedido[pedido_id]:
+            for prod, cant, uni, sabor in detalles_pedido:
                 linea = f"{cant:.2f} {uni} - {prod}"
                 if sabor.strip():
                     linea += f" | Sabor: {sabor}"
