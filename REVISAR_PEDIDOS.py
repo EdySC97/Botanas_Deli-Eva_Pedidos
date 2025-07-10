@@ -3,9 +3,7 @@ import psycopg2
 import pandas as pd
 from datetime import date
 from fpdf import FPDF
-import io
 
-# --- Función para convertir unidades a kg ---
 def convertir_a_kg(cantidad, unidad):
     if not unidad:
         return 0
@@ -37,25 +35,19 @@ cur = conn.cursor()
 
 st.title("📦 Revisión de Pedidos")
 
-# --- Selección de rango de fechas ---
-fecha_inicio, fecha_fin = st.date_input(
-    "Selecciona rango de fechas",
-    value=[date.today(), date.today()],
-    key="rango_fechas"
-)
+# --- Filtros principales ---
+fecha_inicio, fecha_fin = st.date_input("Selecciona rango de fechas", value=[date.today(), date.today()])
 if fecha_inicio > fecha_fin:
     st.error("La fecha de inicio debe ser anterior o igual a la final.")
     st.stop()
 
-# --- Opcional: filtro por estado de pedido ---
 estado_filtro = st.selectbox("Filtrar por estado", ["Todos", "en proceso", "listo", "cancelado"])
 
-# --- Obtener lista de clientes para filtrar ---
 cur.execute("SELECT DISTINCT nombre FROM clientes ORDER BY nombre")
-clientes = [r[0] for r in cur.fetchall()]
-cliente_filtro = st.selectbox("Filtrar por cliente", ["Todos"] + clientes)
+clientes = ["Todos"] + [r[0] for r in cur.fetchall()]
+cliente_filtro = st.selectbox("Filtrar por cliente", clientes)
 
-# --- Consulta base de pedidos ---
+# --- Consulta de pedidos ---
 query = """
 SELECT
     p.id,
@@ -78,7 +70,6 @@ if cliente_filtro != "Todos":
     params.append(cliente_filtro)
 
 query += " ORDER BY p.fecha, p.id"
-
 cur.execute(query, params)
 pedidos = cur.fetchall()
 
@@ -88,10 +79,9 @@ if not pedidos:
     conn.close()
     st.stop()
 
-# --- Procesar pedidos ---
 pedido_ids = [p[0] for p in pedidos]
 
-# --- Traer todos los detalles de los pedidos en lote ---
+# --- Detalles de pedidos ---
 cur.execute("""
 SELECT
     dp.pedido_id,
@@ -105,25 +95,25 @@ WHERE dp.pedido_id = ANY(%s);
 """, (pedido_ids,))
 detalles = cur.fetchall()
 
-# Agrupar detalles por pedido
+# --- Agrupar detalles por pedido ---
 detalles_por_pedido = {}
-total_kilos_por_pedido = {}
+kg_por_pedido = {}
 
 for pid, producto, cantidad, unidad, sabor in detalles:
     detalles_por_pedido.setdefault(pid, []).append((producto, cantidad, unidad, sabor))
-    total_kilos_por_pedido[pid] = total_kilos_por_pedido.get(pid, 0) + convertir_a_kg(cantidad, unidad)
+    kg_por_pedido[pid] = kg_por_pedido.get(pid, 0) + convertir_a_kg(cantidad, unidad)
 
-# --- Mostrar cada pedido ---
+# --- Mostrar pedidos ---
 for pedido in pedidos:
     pedido_id, nombre_cliente, alias_cliente, fecha_local, estado_actual = pedido
-    total_kg = total_kilos_por_pedido.get(pedido_id, 0)
+    total_kg = kg_por_pedido.get(pedido_id, 0)
 
-    with st.expander(f"📄 Pedido #{pedido_id} | Cliente: {nombre_cliente} | Estado: {estado_actual}"):
+    with st.expander(f"📄 Pedido #{pedido_id} | {nombre_cliente} | Estado: {estado_actual}"):
         st.markdown(f"**Alias:** {alias_cliente}")
         st.markdown(f"**Fecha:** {fecha_local}")
         st.markdown(f"**Total estimado en kilos:** {total_kg:.2f} kg")
 
-        # Mostrar contenido en tabla
+        # Tabla de productos
         df = pd.DataFrame(detalles_por_pedido.get(pedido_id, []),
                           columns=["Producto", "Cantidad", "Unidad", "Sabor"])
         st.table(df)
@@ -138,28 +128,27 @@ for pedido in pedidos:
             conn.commit()
             st.success(f"Pedido {pedido_id} actualizado a '{nuevo_estado}'.")
 
-        # Botón para descargar como PDF
-        if st.button("Descargar PDF", key=f"pdf_{pedido_id}"):
-            pdf = FPDF(orientation="P", unit="mm", format=(58, 210))  # formato ticket 58mm
+        # PDF estilo ticket
+        if st.button("📥 Descargar PDF", key=f"pdf_{pedido_id}"):
+            pdf = FPDF(orientation="P", unit="mm", format=(58, 210))
             pdf.add_page()
-            pdf.set_font("Arial", "B", 10)
-            pdf.cell(0, 6, f"PEDIDO #{pedido_id}", ln=True)
             pdf.set_font("Arial", "B", 9)
+            pdf.cell(0, 6, f"PEDIDO #{pedido_id}", ln=True)
             pdf.cell(0, 6, f"{nombre_cliente}", ln=True)
             pdf.set_font("Arial", "", 8)
             pdf.cell(0, 5, f"Alias: {alias_cliente}", ln=True)
             pdf.cell(0, 5, f"Fecha: {fecha_local}", ln=True)
             pdf.cell(0, 5, f"Estado: {nuevo_estado}", ln=True)
             pdf.ln(3)
-            pdf.set_font("Arial", "", 7)
 
+            pdf.set_font("Arial", "", 7)
             for prod, cant, uni, sabor in detalles_por_pedido[pedido_id]:
-                linea = f"{cant} {uni} - {prod}"
-                if sabor:
+                linea = f"{cant:.2f} {uni} - {prod}"
+                if sabor.strip():
                     linea += f" | Sabor: {sabor}"
                 pdf.multi_cell(0, 4, linea)
 
-            pdf.ln(3)
+            pdf.ln(2)
             pdf.set_font("Arial", "B", 8)
             pdf.cell(0, 5, f"Total estimado: {total_kg:.2f} kg", ln=True)
 
