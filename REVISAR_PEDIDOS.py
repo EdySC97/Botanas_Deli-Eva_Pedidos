@@ -4,7 +4,7 @@ import pandas as pd
 from datetime import date
 from fpdf import FPDF
 st.set_page_config(
-    page_title="Revisión de pedidos,
+    page_title="Revisión de pedidos",
     page_icon="🧠",
     layout="centered",
     initial_sidebar_state="expanded",
