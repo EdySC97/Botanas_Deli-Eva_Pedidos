@@ -3,7 +3,7 @@ import psycopg2
 import pandas as pd
 import os
 st.set_page_config(
-    page_title="Tienda online",
+    page_title="Tienda online Botanas Botanas Deli-Eva",
     page_icon="🏠",
     layout="centered",
     initial_sidebar_state="expanded",
@@ -263,4 +263,5 @@ else:
 
 cur.close()
 conn.close()
+
 
