@@ -2,7 +2,12 @@ import streamlit as st
 import psycopg2
 import pandas as pd
 import os
-
+st.set_page_config(
+    page_title="Tienda online",
+    page_icon="🏠",
+    layout="centered",
+    initial_sidebar_state="expanded",
+)
 os.environ["PGCLIENTENCODING"] = "latin1"
 
 st.title("Captura de Pedido")
@@ -258,3 +263,4 @@ else:
 
 cur.close()
 conn.close()
+
