@@ -48,10 +48,13 @@ conn = psycopg2.connect(
 cur = conn.cursor()
 
 st.title("📦 Revisión de Pedidos")
-
+col1, col2 = st.columns(2)
+with col1:
 # --- Filtros ---
-fecha_inicio = st.date_input("Selecciona fecha de inicio", value=date.today())
-fecha_fin = st.date_input("Selecciona fecha de fin", value=date.today())
+    fecha_inicio = st.date_input("Selecciona fecha de inicio", value=date.today())
+    
+with col2:
+    fecha_fin = st.date_input("Selecciona fecha de fin", value=date.today())
 
 if fecha_inicio > fecha_fin:
     st.error("La fecha de inicio debe ser anterior o igual a la final.")
