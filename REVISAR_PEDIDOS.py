@@ -66,17 +66,10 @@ with col2:
 if fecha_inicio > fecha_fin:
     st.error("La fecha de inicio debe ser anterior o igual a la final.")
     st.stop()
-<<<<<<< HEAD
-col1,col2 = st.columns(2)
-with col1:
-    estado_filtro = st.selectbox("Filtrar por estado", [
-                                "Todos", "en proceso", "listo", "cancelado"])
-=======
 col1, col2 = st.columns(2)
 with col1:
     estado_filtro = st.selectbox("Filtrar por estado", [
         "Todos", "en proceso", "listo", "cancelado"])
->>>>>>> 1216868 (Cambios en unidades)
 with col2:
     cur.execute("SELECT DISTINCT nombre FROM clientes ORDER BY nombre")
     clientes = ["Todos"] + [r[0] for r in cur.fetchall()]
