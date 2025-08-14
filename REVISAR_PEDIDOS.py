@@ -19,7 +19,7 @@ def convertir_a_kg(cantidad, unidad):
             return 0
         cantidad = float(cantidad)
         unidad = unidad.lower().strip()
-        if unidad in ['kilo', 'kilos', 'kg']:
+        if unidad in ['kilo', 'kilos', 'kg', "bulto 10", "bulto de 20", "bulto de 5"]:
             return cantidad
         elif unidad == 'medio':
             return cantidad * 0.5
@@ -31,6 +31,12 @@ def convertir_a_kg(cantidad, unidad):
             return cantidad * 0.10
         elif unidad in ['70 gr', '70g', '70 gramos']:
             return cantidad * 0.07
+        elif unidad in ['bulto 10']:
+            return cantidad * 10
+        elif unidad in ['bulto de 20']:
+            return cantidad * 20
+        elif unidad in ['bulto de 5']:
+            return cantidad * 5
         else:
             return 0
     except (TypeError, ValueError):
@@ -60,10 +66,17 @@ with col2:
 if fecha_inicio > fecha_fin:
     st.error("La fecha de inicio debe ser anterior o igual a la final.")
     st.stop()
+<<<<<<< HEAD
 col1,col2 = st.columns(2)
 with col1:
     estado_filtro = st.selectbox("Filtrar por estado", [
                                 "Todos", "en proceso", "listo", "cancelado"])
+=======
+col1, col2 = st.columns(2)
+with col1:
+    estado_filtro = st.selectbox("Filtrar por estado", [
+        "Todos", "en proceso", "listo", "cancelado"])
+>>>>>>> 1216868 (Cambios en unidades)
 with col2:
     cur.execute("SELECT DISTINCT nombre FROM clientes ORDER BY nombre")
     clientes = ["Todos"] + [r[0] for r in cur.fetchall()]
