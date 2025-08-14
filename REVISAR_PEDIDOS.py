@@ -50,8 +50,9 @@ cur = conn.cursor()
 st.title("📦 Revisión de Pedidos")
 
 # --- Filtros ---
-fecha_inicio, fecha_fin = st.date_input(
-    "Selecciona rango de fechas", value=[date.today(), date.today()])
+fecha_inicio = st.date_input("Selecciona fecha de inicio", value=date.today())
+fecha_fin = st.date_input("Selecciona fecha de fin", value=date.today())
+
 if fecha_inicio > fecha_fin:
     st.error("La fecha de inicio debe ser anterior o igual a la final.")
     st.stop()
