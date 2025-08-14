@@ -50,22 +50,24 @@ cur = conn.cursor()
 st.title("📦 Revisión de Pedidos")
 col1, col2 = st.columns(2)
 with col1:
-# --- Filtros ---
-    fecha_inicio = st.date_input("Selecciona fecha de inicio", value=date.today())
-    
+    # --- Filtros ---
+    fecha_inicio = st.date_input(
+        "Selecciona fecha de inicio", value=date.today())
+
 with col2:
     fecha_fin = st.date_input("Selecciona fecha de fin", value=date.today())
 
 if fecha_inicio > fecha_fin:
     st.error("La fecha de inicio debe ser anterior o igual a la final.")
     st.stop()
-
-estado_filtro = st.selectbox("Filtrar por estado", [
-                             "Todos", "en proceso", "listo", "cancelado"])
-
-cur.execute("SELECT DISTINCT nombre FROM clientes ORDER BY nombre")
-clientes = ["Todos"] + [r[0] for r in cur.fetchall()]
-cliente_filtro = st.selectbox("Filtrar por cliente", clientes)
+col1,col2 = st.columns(2)
+with col1:
+    estado_filtro = st.selectbox("Filtrar por estado", [
+                                "Todos", "en proceso", "listo", "cancelado"])
+with col2:
+    cur.execute("SELECT DISTINCT nombre FROM clientes ORDER BY nombre")
+    clientes = ["Todos"] + [r[0] for r in cur.fetchall()]
+    cliente_filtro = st.selectbox("Filtrar por cliente", clientes)
 
 # --- Consulta pedidos ---
 query = """
