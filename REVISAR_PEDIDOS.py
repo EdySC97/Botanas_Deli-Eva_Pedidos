@@ -3,6 +3,7 @@ import psycopg2
 import pandas as pd
 from datetime import date
 from fpdf import FPDF
+
 st.set_page_config(
     page_title="Revisión de pedidos",
     page_icon="🧠",
@@ -10,6 +11,8 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 # --- Función para convertir unidades a kg ---
+
+
 def convertir_a_kg(cantidad, unidad):
     try:
         if cantidad is None or unidad is None:
@@ -47,12 +50,14 @@ cur = conn.cursor()
 st.title("📦 Revisión de Pedidos")
 
 # --- Filtros ---
-fecha_inicio, fecha_fin = st.date_input("Selecciona rango de fechas", value=[date.today(), date.today()])
+fecha_inicio, fecha_fin = st.date_input(
+    "Selecciona rango de fechas", value=[date.today(), date.today()])
 if fecha_inicio > fecha_fin:
     st.error("La fecha de inicio debe ser anterior o igual a la final.")
     st.stop()
 
-estado_filtro = st.selectbox("Filtrar por estado", ["Todos", "en proceso", "listo", "cancelado"])
+estado_filtro = st.selectbox("Filtrar por estado", [
+                             "Todos", "en proceso", "listo", "cancelado"])
 
 cur.execute("SELECT DISTINCT nombre FROM clientes ORDER BY nombre")
 clientes = ["Todos"] + [r[0] for r in cur.fetchall()]
@@ -73,8 +78,8 @@ WHERE DATE(p.fecha AT TIME ZONE 'UTC' AT TIME ZONE 'America/Chihuahua') BETWEEN 
 params = [fecha_inicio, fecha_fin]
 
 if estado_filtro != "Todos":
-    query += " AND p.estado = %s"
-    params.append(estado_filtro)
+    query += " AND TRIM(LOWER(p.estado)) = %s"
+    params.append(estado_filtro.strip().lower())
 
 if cliente_filtro != "Todos":
     query += " AND c.nombre = %s"
@@ -111,8 +116,10 @@ detalles_por_pedido = {}
 kg_por_pedido = {}
 
 for pid, producto, cantidad, unidad, sabor in detalles:
-    detalles_por_pedido.setdefault(pid, []).append((producto, cantidad, unidad, sabor))
-    kg_por_pedido[pid] = kg_por_pedido.get(pid, 0) + convertir_a_kg(cantidad, unidad)
+    detalles_por_pedido.setdefault(pid, []).append(
+        (producto, cantidad, unidad, sabor))
+    kg_por_pedido[pid] = kg_por_pedido.get(
+        pid, 0) + convertir_a_kg(cantidad, unidad)
 
 # --- Mostrar cada pedido ---
 for pedido in pedidos:
@@ -127,18 +134,22 @@ for pedido in pedidos:
         # Mostrar productos en tabla
         detalles_pedido = detalles_por_pedido.get(pedido_id, [])
         if detalles_pedido:
-            df = pd.DataFrame(detalles_pedido, columns=["Producto", "Cantidad", "Unidad", "Sabor"])
+            df = pd.DataFrame(detalles_pedido, columns=[
+                              "Producto", "Cantidad", "Unidad", "Sabor"])
             st.table(df)
         else:
             st.warning("Este pedido no tiene productos.")
 
         # Cambiar estado
         estados = ["en proceso", "listo", "cancelado"]
-        index_estado = estados.index(estado_actual) if estado_actual in estados else 0
-        nuevo_estado = st.selectbox("Cambiar estado", estados, index=index_estado, key=f"estado_{pedido_id}")
+        index_estado = estados.index(
+            estado_actual) if estado_actual in estados else 0
+        nuevo_estado = st.selectbox(
+            "Cambiar estado", estados, index=index_estado, key=f"estado_{pedido_id}")
 
         if st.button("Guardar estado", key=f"guardar_{pedido_id}"):
-            cur.execute("UPDATE pedidos SET estado = %s WHERE id = %s", (nuevo_estado, pedido_id))
+            cur.execute("UPDATE pedidos SET estado = %s WHERE id = %s",
+                        (nuevo_estado, pedido_id))
             conn.commit()
             st.success(f"Pedido {pedido_id} actualizado a '{nuevo_estado}'.")
 
