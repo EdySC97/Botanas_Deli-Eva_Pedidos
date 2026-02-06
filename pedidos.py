@@ -74,7 +74,9 @@ unidades_palomitas = ["50 gr", "70 gr", "Medio kilo", "Kilo"]
 sabores_palomitas = ["Escolar", "Queso", "Flaming Hot", "Queso Jalapeño", "Mantequilla"]
 
 #Definir unidades de crema de cacahuate
+
 unidades_crema_cacahuate=["Litro (1 Kg)","Medio litro (Medio kilo)","Cuarto de litro (Cuarto de kilo)"]
+sabor_crema=["Con zúcar","Sin azúcar"]
 
 unidades_chips = ["100 g", "200 g", "Medio kilo", "Bulto 5kg", "Bulto 10kg"]
 sabores_chips = ["Adobada", "Queso Jalapeño", "Salsa Negra", "Naturales (Camote)"]
@@ -118,6 +120,8 @@ elif producto_raiz == "carne":
     sabores = sabores_carne_seca
 elif producto_raiz=="crema":
     unidades= unidades_crema_cacahuate
+    sabores=sabor_crema
+
 else:
     unidades = unidades_generales
     sabores = ["N/A"]  # Para productos sin sabores
@@ -268,6 +272,7 @@ else:
 
 cur.close()
 conn.close()
+
 
 
 
